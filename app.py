@@ -70,7 +70,7 @@ def wagonGen(df, ax):
         ax.set_aspect("equal", "box")
         ax.axis("off")
         return
-    ax.set_title("General or all Boundary Wagon Wheel")
+    ax.set_title("General Boundary Wagon Wheel")
     ax.add_patch(Circle((0,0),200,color="green",alpha=0.2))
     bdf["angle_rad"] = np.arctan2(bdf["plotY"], bdf["plotX"])
     bdf["fixedX"] = 200 * np.cos(bdf["angle_rad"])
@@ -126,7 +126,7 @@ def wagonSD(df, ax):
 def wagonZoneWheel(df, ax):
     df = df[df["wagonZone"] != 0].copy()
     if df.empty:
-        ax.set_title("8-Zone Wheel - No Valid Zones")
+        ax.set_title("Wagon Zone Wheel - No Valid Zones")
         return
     def zone_stats(sub):
         balls = len(sub)
@@ -188,7 +188,7 @@ def wagonZoneWheel(df, ax):
     ax.set_ylim(-1, 1)
     ax.set_aspect("auto")
     ax.axis("off")
-    ax.set_title("wagon Zone Wheel")
+    ax.set_title("Wagon Zone Wheel")
 
 def tab(df, df_global):
     if "bowl_style" not in df.columns:
@@ -200,7 +200,7 @@ def tab(df, df_global):
         boundary_ct = g[g["batruns"].isin([4,6])].shape[0]
         dot_ct = g[g["batruns"]==0].shape[0]
         sr_val = 100 * r / b if b > 0 else 0
-        dismiss_pct = 100 * d / b if b > 0 else 0
+        dismiss_pct = d
         boundary_pct = 100 * boundary_ct / b if b > 0 else 0
         dot_pct = 100 * dot_ct / b if b > 0 else 0
         ave_val = r / d if d > 0 else float("inf")
@@ -208,7 +208,7 @@ def tab(df, df_global):
             "Balls": b,
             "Runs": r,
             "SR": sr_val,
-            "Dismissal%": dismiss_pct,
+            "Dismissals": dismiss_pct,
             "Boundary%": boundary_pct,
             "Dot%": dot_pct,
             "Ave": ave_val,
@@ -244,19 +244,19 @@ def tab(df, df_global):
     }
     merged["Bowl Style"] = merged["bowl_style"].apply(lambda x: bowlABB.get(x, x))
     merged.drop(columns=["bowl_style"], inplace=True)
-    for c in ["SR", "Dismissal%", "Boundary%", "Dot%", "Ave", "ExpRuns"]:
+    for c in ["SR", "Dismissals", "Boundary%", "Dot%", "Ave", "ExpRuns"]:
         merged[c] = merged[c].apply(lambda x: round(x, 2) if isinstance(x, (int, float)) and math.isfinite(x) else "inf")
     merged["Balls"] = merged["Balls"].astype(int)
     merged["Runs"] = merged["Runs"].astype(int)
     merged = merged[[
-        "Bowl Style", "Balls", "Runs", "SR", "Dismissal%",
-        "Boundary%", "Dot%", "Ave", "ExpRuns", "Impact/100b"
+        "Bowl Style", "Balls", "Runs", "SR", "Dismissals",
+        "Boundary%", "Dot%", "Impact/100b"
     ]]
     return merged
 
 def main():
     st.set_page_config(page_title="T20: SPORTS", layout="wide")
-    st.title("T20\nProject BY Sai Arun | Mustafa | Mitali")
+    st.title("T20 Cricket Sports\nData Science Lab project by Sai Arun | Mustafa | Mitali")
 
     df = ld()
     df_global = df.copy()
@@ -266,7 +266,7 @@ def main():
     if "year" in df.columns:
         minY = int(df["year"].min())
         maxY = int(df["year"].max())
-        year_range = st.sidebar.slider("select tange", minY, maxY, (minY, maxY))
+        year_range = st.sidebar.slider("Year range", minY, maxY, (minY, maxY))
     else:
         year_range = None
     bowler_type = st.sidebar.radio("Bowler Type", ["All", "Spin", "Pace"])
@@ -282,7 +282,7 @@ def main():
         sub = sub[sub["control"] == 1]
 
     if sub.empty:
-        st.warning("No data found under these filters.")
+        st.warning("No data found.")
         return
 
     sub = shift_coords(sub)
@@ -304,7 +304,7 @@ def main():
 
     st.markdown(f"""
     <div style='background-color:#1e1e1e; color:white; padding:20px; border-radius:5px; margin-bottom:20px;'>
-      <h2>{selected_batter} {hand}</h2>
+      <h2>{selected_batter} | {hand}</h2>
       <p>
         Runs: {total_runs} | 
         Balls: {balls_faced} | 
@@ -316,7 +316,7 @@ def main():
     </div>
     """, unsafe_allow_html=True)
 
-    st.subheader("Boundary Wagon: General vs. Intelligent")
+    st.subheader("Boundary Wagon Wheel: General vs. Intelligent")
     fig, (ax_left, ax_right) = plt.subplots(ncols=2, figsize=(14, 6))
     wagonGen(sub, ax_left)
     wagonSD(sub, ax_right)
@@ -329,21 +329,21 @@ def main():
     fig2.tight_layout()
     st.pyplot(fig2)
 
-    st.subheader("Specs wrt bowlstyle")
+    st.subheader("Specifications w.r.t Bowlstyle")
     sty_table = tab(sub, df_global)
     if not sty_table.empty:
         st.dataframe(sty_table)
         st.markdown(r"""
         **Explanations**:
-        - **Shot Difficulty**: Shots in all zones/shots in each zone..
+        - **Shot Difficulty**: Shots in all zones / shots in each specific zone.
         - **Genral Wagon Wheel**: All boundaries.
-        - **Intelligent Wagon Wheel**: boundary ll = (runs × sd).
-        - **wagon Zone Wheel**: zone based specs:
-        - **Impact/100balls**: imapct of player on team.
-        - **expected**: ballsxsr/100
+        - **Intelligent Wagon Wheel**: Boundary w.r.t line length combination = (runs × sd).
+        - **Wagon Zone Wheel**: Zone based specifications.
+        - **Strike Rate**: Total runs / Balls x 100.
+        - **Impact/100balls**: Imapct of player on team.
         """)
     else:
-        st.write("No bowling style data found for these filters.")
+        st.write("No bowling style data found.")
 
 if __name__=="__main__":
     main()
